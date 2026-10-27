@@ -1,10 +1,11 @@
+#include <cstdio>
 #include <stdio.h>
 #include <signal.h>
 #include <err.h>
 #include <librdkafka/rdkafka.h>
 #include <string.h>
 
-#include "http_log.capnp.h"
+#include <iostream>
 #include "setup.h"
 #include "decoder.h"
 
@@ -60,7 +61,13 @@ int main(void) {
         }
 
         if (log_buffer.size() >= BATCH_SIZE) {
+            // store the batch in clickhouse 
+
+            for (const auto &log : log_buffer) {
+                std::cout << log.remoteAddr << "\n" << log.url << "\n----------\n";
+            }
             rd_kafka_commit(consumer, NULL, 0);
+            log_buffer.clear();
         }
 
         rd_kafka_message_destroy(consumer_message);
