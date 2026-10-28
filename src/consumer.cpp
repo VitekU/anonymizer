@@ -6,9 +6,10 @@
 #include "setup.h"
 #include "decoder.h"
 #include "db_client_functions.h"
+#include "addr_anonymizer.h"
 
 #define TOPIC "http_log"
-#define BATCH_SIZE 10
+#define BATCH_SIZE 100
 
 static volatile sig_atomic_t run = 1;
 
@@ -54,6 +55,7 @@ int main(void) {
             HttpLog log;
 
             if (get_log(consumer_message->payload, consumer_message->len, &log)) {
+                anonymize(log.remoteAddr);
                 log_buffer.push_back(log);
             }
             else {
