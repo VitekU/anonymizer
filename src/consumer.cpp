@@ -1,13 +1,11 @@
-#include <cstdio>
-#include <stdio.h>
 #include <signal.h>
 #include <err.h>
 #include <librdkafka/rdkafka.h>
-#include <string.h>
 
-#include <iostream>
+#include "clickhouse/client.h"
 #include "setup.h"
 #include "decoder.h"
+#include "db_client_functions.h"
 
 #define TOPIC "http_log"
 #define BATCH_SIZE 10
@@ -34,19 +32,19 @@ int main(void) {
     signal(SIGINT, stop);
 
     std::vector<HttpLog> log_buffer;
+
+    clickhouse::Client client {clickhouse::ClientOptions {}.SetHost("localhost").SetPort(9000).SetUser("default")};
+
     while (run) {
         rd_kafka_message_t *consumer_message;
         consumer_message = rd_kafka_consumer_poll(consumer, 500);
 
         if (!consumer_message) {
-            printf("Waiting...\n");
             continue;
         }
 
         if (consumer_message->err) {
-            if (consumer_message->err == RD_KAFKA_RESP_ERR__PARTITION_EOF) {
-
-            } 
+            if (consumer_message->err == RD_KAFKA_RESP_ERR__PARTITION_EOF) {} 
             else {
                 printf("Consumer error: %s\n", rd_kafka_message_errstr(consumer_message));
                 return 1;
@@ -58,16 +56,20 @@ int main(void) {
             if (get_log(consumer_message->payload, consumer_message->len, &log)) {
                 log_buffer.push_back(log);
             }
+            else {
+                std::cout << "Incorrect message format\n";
+            }
         }
 
         if (log_buffer.size() >= BATCH_SIZE) {
-            // store the batch in clickhouse 
-
-            for (const auto &log : log_buffer) {
-                std::cout << log.remoteAddr << "\n" << log.url << "\n----------\n";
+            if (insert_logs(&client, log_buffer)) {
+                std::cout << "Succesful insert to database\n";
+                rd_kafka_commit(consumer, NULL, 0);
+                log_buffer.clear();
             }
-            rd_kafka_commit(consumer, NULL, 0);
-            log_buffer.clear();
+            else {
+                std::cout << "Error inserting into the database";
+            }
         }
 
         rd_kafka_message_destroy(consumer_message);
