@@ -9,7 +9,7 @@
 #include "addr_anonymizer.h"
 
 #define TOPIC "http_log"
-#define BATCH_SIZE 100
+#define BATCH_SIZE 10
 
 static volatile sig_atomic_t run = 1;
 
@@ -21,6 +21,7 @@ static void stop(int sig) {
 int main(void) {
     rd_kafka_t *consumer;   
     char errstr[512];
+    bool database_responsive = true;
 
     if (!setup_consumer(&consumer, errstr)) {
         errx(1, "Failed to create new consumer.");
@@ -34,7 +35,7 @@ int main(void) {
 
     std::vector<HttpLog> log_buffer;
 
-    clickhouse::Client client {clickhouse::ClientOptions {}.SetHost("localhost").SetPort(9000).SetUser("default")};
+    clickhouse::Client client{clickhouse::ClientOptions {}.SetHost("localhost").SetPort(9000).SetUser("default")};
 
     while (run) {
         rd_kafka_message_t *consumer_message;
@@ -70,7 +71,9 @@ int main(void) {
                 log_buffer.clear();
             }
             else {
-                std::cout << "Error inserting into the database";
+                database_responsive = false;
+                
+                // pause partition, 
             }
         }
 

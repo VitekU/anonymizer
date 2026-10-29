@@ -3,6 +3,7 @@
 #include "clickhouse/columns/lowcardinality.h"
 #include "clickhouse/columns/numeric.h"
 #include "clickhouse/columns/string.h"
+#include <exception>
 #include <memory>
 
 bool insert_logs(clickhouse::Client *client, std::vector<HttpLog> logs) {
@@ -44,7 +45,8 @@ bool insert_logs(clickhouse::Client *client, std::vector<HttpLog> logs) {
         client->Insert("http_log", block);
         return true;
     }
-    catch(int err) {
+    catch(std::exception &e) {
+        std::cerr << "Failed inserting into database: " << e.what() << '\n';
         return false;
     }
 

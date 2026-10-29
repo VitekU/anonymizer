@@ -5,7 +5,7 @@ void anonymize(std::string &addr) {
     char c = addr[i];
 
     while (c != '.') {
-        addr[i] = '\n';
+        addr[i] = '\0';
         c = addr[--i];
     }
     addr[i + 1] = 'X';
