@@ -1,3 +1,4 @@
+#include "setup.h"
 #include <stdio.h>
 #include <err.h>
 #include <librdkafka/rdkafka.h>
@@ -47,4 +48,20 @@ int subscribe_to_topic(rd_kafka_t **consumer, const char *topic) {
 
     rd_kafka_topic_partition_list_destroy(subscription);
     return 1;
+}
+
+void pause_partitions(rd_kafka_t *consumer) {
+    rd_kafka_topic_partition_list_t *partitions;
+    if (rd_kafka_assignment(consumer, &partitions) == RD_KAFKA_RESP_ERR_NO_ERROR) {
+        rd_kafka_pause_partitions(consumer, partitions);
+        rd_kafka_topic_partition_list_destroy(partitions);
+    }
+}
+
+void resume_partitions(rd_kafka_t *consumer) {
+    rd_kafka_topic_partition_list_t *partitions;
+    if (rd_kafka_assignment(consumer, &partitions) == RD_KAFKA_RESP_ERR_NO_ERROR) {
+        rd_kafka_resume_partitions(consumer, partitions);
+        rd_kafka_topic_partition_list_destroy(partitions);
+    }
 }

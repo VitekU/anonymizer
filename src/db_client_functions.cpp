@@ -49,5 +49,15 @@ bool insert_logs(clickhouse::Client *client, std::vector<HttpLog> logs) {
         std::cerr << "Failed inserting into database: " << e.what() << '\n';
         return false;
     }
+}
 
-}   
+bool reconnect(clickhouse::Client *client) {
+    try {
+        client->ResetConnection();
+        return true;
+    }
+    catch (std::exception &e) {
+        std::cerr << "Failed recconnection: " << e.what() << '\n';
+        return false;
+    }
+}

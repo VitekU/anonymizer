@@ -39,29 +39,43 @@ int main(void) {
 
     while (run) {
         rd_kafka_message_t *consumer_message;
+       
+        if (!database_responsive) {
+            rd_kafka_message_t *empty_msg = rd_kafka_consumer_poll(consumer, 500);
+            if (empty_msg) {
+                rd_kafka_message_destroy(empty_msg);
+            }
+            
+            if (reconnect(&client)) {
+                std::cout << "Succesfully reconnected to database\n";
+                database_responsive = true;
+                resume_partitions(consumer);
+            }
+            else {
+                std::cout << "Failed to reconnect to database\n";
+                continue;  
+            }
+        }
+
         consumer_message = rd_kafka_consumer_poll(consumer, 500);
 
         if (!consumer_message) {
             continue;
         }
 
-        if (consumer_message->err) {
-            if (consumer_message->err == RD_KAFKA_RESP_ERR__PARTITION_EOF) {} 
-            else {
-                printf("Consumer error: %s\n", rd_kafka_message_errstr(consumer_message));
-                return 1;
-            }
+        if (consumer_message->err && consumer_message->err != RD_KAFKA_RESP_ERR__PARTITION_EOF) {
+            printf("Consumer error: %s\n", rd_kafka_message_errstr(consumer_message));
+            return 1;
         } 
-        else {
-            HttpLog log;
 
-            if (get_log(consumer_message->payload, consumer_message->len, &log)) {
-                anonymize(log.remoteAddr);
-                log_buffer.push_back(log);
-            }
-            else {
-                std::cout << "Incorrect message format\n";
-            }
+        HttpLog log;
+        if (get_log(consumer_message->payload, consumer_message->len, &log)) {
+            anonymize(log.remoteAddr);
+            log_buffer.push_back(log);
+        }
+        else {
+            // TODO: handle messages that could not be decoded due to wrong format of the message
+            std::cout << "Incorrect message format\n";
         }
 
         if (log_buffer.size() >= BATCH_SIZE) {
@@ -72,8 +86,7 @@ int main(void) {
             }
             else {
                 database_responsive = false;
-                
-                // pause partition, 
+                pause_partitions(consumer);
             }
         }
 
