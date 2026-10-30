@@ -7,6 +7,7 @@
 #include "decoder.h"
 #include "db_client_functions.h"
 #include "addr_anonymizer.h"
+#include "timer.h"
 
 #define TOPIC "http_log"
 #define BATCH_SIZE 10
@@ -34,6 +35,7 @@ int main(void) {
     signal(SIGINT, stop);
 
     std::vector<HttpLog> log_buffer;
+    Timer timer(10000);
 
     clickhouse::Client client{clickhouse::ClientOptions {}.SetHost(CLICKHOUSE_ADDRES).SetPort(CLICKHOUSE_PORT).SetUser(CLICKHOUSE_USER).SetPassword(CLICKHOUSE_PASSWORD)};
     setup_database(&client);
@@ -41,21 +43,23 @@ int main(void) {
 
     while (run) {
         rd_kafka_message_t *consumer_message;
-       
+        
         if (!database_responsive) {
             rd_kafka_message_t *empty_msg = rd_kafka_consumer_poll(consumer, 500);
             if (empty_msg) {
                 rd_kafka_message_destroy(empty_msg);
             }
-            
-            if (reconnect(&client)) {
-                std::cout << "Succesfully reconnected to database\n";
-                database_responsive = true;
-                resume_partitions(consumer);
-            }
-            else {
-                std::cout << "Failed to reconnect to database\n";
-                continue;  
+
+            if (timer.is_timer_ready()) {
+                if (reconnect(&client)) {
+                    std::cout << "Succesfully reconnected to database\n";
+                    database_responsive = true;
+                    resume_partitions(consumer);
+                }
+                else {
+                    std::cout << "Failed to reconnect to database\n";
+                    continue;  
+                }
             }
         }
 

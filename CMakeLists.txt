@@ -25,6 +25,7 @@ add_executable(
     src/http_log.capnp.c++
     src/db_client_functions.cpp
     src/addr_anonymizer.cpp
+    src/timer.cpp
 )
 
 target_link_libraries(consumer PRIVATE PkgConfig::DEPS clickhouse-cpp-lib)
