@@ -18,13 +18,13 @@ bool insert_logs(clickhouse::Client *client, std::vector<HttpLog> logs) {
     auto url = std::make_shared<clickhouse::ColumnString>();
 
     for (auto const &log : logs) {
-        timestamp->Append(log.timestampEpochMilli);
-        resource_id->Append(log.requestTimeMilli);
+        timestamp->Append(log.timestampEpochMilli / 1000);
+        resource_id->Append(log.resourceId);
         bytes_sent->Append(log.bytesSent);
         request_time_milli->Append(log.requestTimeMilli);
         response_status->Append(log.responseStatus);
         cache_status->Append(log.cacheStatus);
-        method->Append(log.cacheStatus);
+        method->Append(log.method);
         remote_addr->Append(log.remoteAddr);
         url->Append(log.url);
     }
