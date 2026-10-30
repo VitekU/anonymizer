@@ -1,0 +1,107 @@
+services:
+  clickhouse-server:
+    image: clickhouse/clickhouse-server:25.5-alpine
+    container_name: clickhouse
+    ports:
+      - 8123:8123
+      - 9000:9000
+    ulimits:
+      nproc: 65535
+      nofile:
+        soft: 262144
+        hard: 262144
+    environment:
+      # With this parameter, default user can be used over network.
+      CLICKHOUSE_SKIP_USER_SETUP: 1
+      CLICKHOUSE_ALWAYS_RUN_INITDB_SCRIPTS: 1
+    # You can create a schema.sql file and initialize the database with it on container startup.
+    # volumes:
+    #   - ../solution/schema.sql:/docker-entrypoint-initdb.d/1_schema.sql:ro
+
+  kafka:
+    image: apache/kafka:3.9.1
+    container_name: kafka
+    ports:
+      - 9092:9092
+      - 9101:9101
+    environment:
+      KAFKA_LISTENERS: CONTROLLER://localhost:9091,HOST://0.0.0.0:9092,DOCKER://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: HOST://localhost:9092,DOCKER://kafka:9093
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,DOCKER:PLAINTEXT,HOST:PLAINTEXT
+      KAFKA_OPTS: -javaagent:/jmx_prometheus_javaagent-1.3.0.jar=5556:/exporter.yml
+      KAFKA_LOG_RETENTION_MS: 60000
+      KAFKA_LOG4J_LOGGERS: kafka.controller=INFO,kafka.producer.async.DefaultEventHandler=INFO,state.change.logger=INFO
+      # Kafka settings for single-node KRaft mode.
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9091
+      KAFKA_INTER_BROKER_LISTENER_NAME: DOCKER
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    volumes:
+      # Use of Java agent is encouraged over standalone JMX exporter.
+      # https://prometheus.github.io/jmx_exporter/#java-agent
+      - ./docker/jmx_exporter/jmx_prometheus_javaagent-1.3.0.jar:/jmx_prometheus_javaagent-1.3.0.jar
+      - ./docker/jmx_exporter/exporter.yml:/exporter.yml
+
+  kafka-ui:
+    image: kafbat/kafka-ui:9cec79c
+    container_name: kafka-ui
+    ports:
+      - 8080:8080
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9093
+    depends_on:
+      - kafka
+
+  prometheus:
+    image: prom/prometheus:v2.34.0
+    container_name: prometheus
+    ports:
+      - 9090:9090
+    volumes:
+      - ./docker/prometheus/prometheus.yml:/prometheus.yml
+    command: --config.file=/prometheus.yml
+    depends_on:
+      - kafka
+
+  grafana:
+    image: grafana/grafana:8.4.5
+    container_name: grafana
+    ports:
+      - 3000:3000
+    environment:
+      GF_PATHS_DATA: /var/lib/grafana
+      GF_SECURITY_ADMIN_PASSWORD: kafka
+    volumes:
+      - ./docker/grafana/provisioning:/etc/grafana/provisioning
+      - ./docker/grafana/dashboards:/var/lib/grafana/dashboards
+    depends_on:
+      - prometheus
+
+  http-log-kafka-producer:
+    container_name: http-log-kafka-producer
+    build: docker/http-log-kafka-producer
+    platform: linux/amd64
+    restart: always
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9093
+      KAFKA_PRODUCER_DELAY_MS: 5000
+    depends_on:
+      - kafka
+  anonymizer:
+    container_name: anonymizer
+    build: 
+      context: .
+      dockerfile: docker/anonymizer/Dockerfile
+    restart: unless-stopped
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9093
+      CLICKHOUSE_ADDRESS: clickhouse-server
+      CLICKHOUSE_PORT: 9000
+      CLICKHOUSE_USER: default
+      CLICKHOUSE_PASSWORD: ""
+    depends_on:
+      - kafka
+      - clickhouse-server
