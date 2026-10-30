@@ -36,6 +36,8 @@ int main(void) {
     std::vector<HttpLog> log_buffer;
 
     clickhouse::Client client{clickhouse::ClientOptions {}.SetHost(CLICKHOUSE_ADDRES).SetPort(CLICKHOUSE_PORT).SetUser(CLICKHOUSE_USER).SetPassword(CLICKHOUSE_PASSWORD)};
+    setup_database(&client);
+    std::cout << "Database setup was succeful\n";
 
     while (run) {
         rd_kafka_message_t *consumer_message;

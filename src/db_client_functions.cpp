@@ -61,3 +61,53 @@ bool reconnect(clickhouse::Client *client) {
         return false;
     }
 }
+
+void setup_database(clickhouse::Client *client) {
+    client->Execute(R"(
+        CREATE TABLE IF NOT EXISTS http_log
+            (
+                timestamp          DateTime,
+                resource_id        UInt64,
+                bytes_sent         UInt64,
+                request_time_milli UInt64,
+                response_status    UInt16,
+                cache_status       LowCardinality(String),
+                method             LowCardinality(String),
+                remote_addr        String,
+                url                String
+            )
+        ENGINE = MergeTree
+        PARTITION BY toYYYYMM(timestamp)
+        ORDER BY (resource_id, timestamp);)");
+    
+    client->Execute(R"(
+        CREATE TABLE IF NOT EXISTS traffic_rollup_1m 
+            (
+                bucket_start        DateTime,
+                resource_id         UInt64,
+                response_status     UInt16,
+                cache_status        LowCardinality(String),
+                remote_addr         String,
+                requests            UInt64,
+                bytes_sent          UInt64,
+                request_time_milli  UInt64
+            )
+        ENGINE = SummingMergeTree
+        PARTITION BY toYYYYMM(bucket_start)
+        ORDER BY (resource_id, bucket_start, response_status, cache_status, remote_addr);)");
+    client->Execute(R"(
+        CREATE MATERIALIZED VIEW IF NOT EXISTS mv_traffic_rollup_1m 
+        TO traffic_rollup_1m 
+        AS
+        SELECT 
+            toStartOfMinute(timestamp) AS bucket_start, 
+            resource_id,
+            response_status,
+            cache_status,
+            remote_addr,
+            count()                    AS requests,
+            sum(bytes_sent)            AS bytes_sent,
+            sum(request_time_milli)   AS request_time_milli
+        FROM http_log
+        GROUP BY bucket_start, resource_id, response_status, cache_status, remote_addr;)");
+}
