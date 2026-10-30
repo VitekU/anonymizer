@@ -8,9 +8,11 @@
 #include "db_client_functions.h"
 #include "addr_anonymizer.h"
 #include "timer.h"
+#include "helper.h"
 
 #define TOPIC "http_log"
 #define BATCH_SIZE 10
+#define DATABASE_RECONNECT_INTERVAL_MS 10000
 
 static volatile sig_atomic_t run = 1;
 
@@ -35,9 +37,14 @@ int main(void) {
     signal(SIGINT, stop);
 
     std::vector<HttpLog> log_buffer;
-    Timer timer(10000);
+    Timer timer(DATABASE_RECONNECT_INTERVAL_MS);
 
-    clickhouse::Client client{clickhouse::ClientOptions {}.SetHost(CLICKHOUSE_ADDRES).SetPort(CLICKHOUSE_PORT).SetUser(CLICKHOUSE_USER).SetPassword(CLICKHOUSE_PASSWORD)};
+    clickhouse::Client client{clickhouse::ClientOptions {}
+        .SetHost(env("CLICKHOUSE_ADDRESS", "localhost"))
+        .SetPort(std::stoi(env("CLICKHOUSE_PORT", "9000")))
+        .SetUser(env("CLICKHOUSE_USER", "default"))
+        .SetPassword(env("CLICKHOUSE_PASSWORD", ""))};
+
     setup_database(&client);
     std::cout << "Database setup was succeful\n";
 

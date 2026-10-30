@@ -1,7 +1,9 @@
-#include "setup.h"
 #include <stdio.h>
 #include <err.h>
 #include <librdkafka/rdkafka.h>
+
+#include "setup.h"
+#include "helper.h"
 
 void set_config(rd_kafka_conf_t *conf, const char *key, const char *value) {
     char errstr[512];
@@ -16,9 +18,9 @@ bool setup_consumer(rd_kafka_t **consumer, char *errstr) {
     rd_kafka_conf_t *conf;
     conf = rd_kafka_conf_new();
     
-    set_config(conf, "bootstrap.servers", "localhost:9092");
+    set_config(conf, "bootstrap.servers", env("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092").c_str());
 
-    set_config(conf, "group.id",          "c-consumer");
+    set_config(conf, "group.id",          "anonymizer");
     set_config(conf, "auto.offset.reset", "earliest");
     set_config(conf, "enable.auto.commit", "false");
 
