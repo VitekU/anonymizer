@@ -11,7 +11,7 @@ cmake -S . -B build
 cmake --build build
 ```
 
-Run with (all optional, defaults shown):
+Run with - the services that it connects to like Kafka and ClickHouse database also need to be running (all optional, defaults shown):
 
 ```bash
 KAFKA_BOOTSTRAP_SERVERS=localhost:9092 \
