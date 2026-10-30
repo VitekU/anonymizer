@@ -28,3 +28,9 @@ add_executable(
 )
 
 target_link_libraries(consumer PRIVATE PkgConfig::DEPS clickhouse-cpp-lib)
+target_compile_definitions(consumer PRIVATE 
+    CLICKHOUSE_ADDRES="localhost"
+    CLICKHOUSE_PORT=9000
+    CLICKHOUSE_USER="default"
+    CLICKHOUSE_PASSWORD=""
+)

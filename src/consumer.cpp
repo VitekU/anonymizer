@@ -35,7 +35,7 @@ int main(void) {
 
     std::vector<HttpLog> log_buffer;
 
-    clickhouse::Client client{clickhouse::ClientOptions {}.SetHost("localhost").SetPort(9000).SetUser("default")};
+    clickhouse::Client client{clickhouse::ClientOptions {}.SetHost(CLICKHOUSE_ADDRES).SetPort(CLICKHOUSE_PORT).SetUser(CLICKHOUSE_USER).SetPassword(CLICKHOUSE_PASSWORD)};
 
     while (run) {
         rd_kafka_message_t *consumer_message;

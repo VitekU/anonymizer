@@ -12,7 +12,7 @@ void set_config(rd_kafka_conf_t *conf, const char *key, const char *value) {
     }
 }
 
-int setup_consumer(rd_kafka_t **consumer, char *errstr) {
+bool setup_consumer(rd_kafka_t **consumer, char *errstr) {
     rd_kafka_conf_t *conf;
     conf = rd_kafka_conf_new();
     
@@ -25,14 +25,14 @@ int setup_consumer(rd_kafka_t **consumer, char *errstr) {
     *consumer = rd_kafka_new(RD_KAFKA_CONSUMER, conf, errstr, sizeof(errstr));
 
     if (!consumer) {
-        return 0;
+        return false;
     }
 
     rd_kafka_poll_set_consumer(*consumer);
-    return 1;   
+    return true;   
 }
 
-int subscribe_to_topic(rd_kafka_t **consumer, const char *topic) {
+bool subscribe_to_topic(rd_kafka_t **consumer, const char *topic) {
     rd_kafka_resp_err_t err;
 
     rd_kafka_topic_partition_list_t *subscription = rd_kafka_topic_partition_list_new(1);
@@ -43,11 +43,11 @@ int subscribe_to_topic(rd_kafka_t **consumer, const char *topic) {
     if (err) {
         rd_kafka_topic_partition_list_destroy(subscription);
         rd_kafka_destroy(*consumer);
-        return 0;
+        return false;
     }
 
     rd_kafka_topic_partition_list_destroy(subscription);
-    return 1;
+    return true;
 }
 
 void pause_partitions(rd_kafka_t *consumer) {
