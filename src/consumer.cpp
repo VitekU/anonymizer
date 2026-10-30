@@ -11,7 +11,7 @@
 #include "helper.h"
 
 #define TOPIC "http_log"
-#define BATCH_SIZE 10
+#define BATCH_SIZE 1000
 #define DATABASE_RECONNECT_INTERVAL_MS 10000
 
 static volatile sig_atomic_t run = 1;
