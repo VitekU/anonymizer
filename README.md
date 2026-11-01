@@ -17,6 +17,7 @@ Run with - the services that it connects to like Kafka and ClickHouse database a
 KAFKA_BOOTSTRAP_SERVERS=localhost:9092 \
 CLICKHOUSE_ADDRESS=localhost CLICKHOUSE_PORT=9000 \
 CLICKHOUSE_USER=default CLICKHOUSE_PASSWORD="" \
+BATCH_SIZE=10000 \
 ./build/consumer
 ```
 
