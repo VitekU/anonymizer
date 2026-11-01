@@ -11,7 +11,7 @@ cmake -S . -B build
 cmake --build build
 ```
 
-Run with - the services that it connects to like Kafka and ClickHouse database also need to be running (all optional, defaults shown):
+Run with - the services that it connects to like Kafka and ClickHouse database also need to be running (all optional, defaults shown, you would probably want to change the `BATCH_SIZE` for testing):
 
 ```bash
 KAFKA_BOOTSTRAP_SERVERS=localhost:9092 \
@@ -27,7 +27,7 @@ BATCH_SIZE=10000 \
 docker compose up -d
 ```
 
-This starts the all of the services needed for this service to run: Kafka, the log producer, the consumer - anonymizer (that is built from this project) and ClickHouse. It also starts Kafka UI (http://localhost:8080), Prometheus (http://localhost:9090) and Grafana (http://localhost:3000, user `admin`, password `kafka`). You can also run the consumer executable in another console and it will connect and work with the fallback environment values.
+This starts the all of the services needed for this service to run: Kafka, the log producer, the consumer - anonymizer (that is built from this project) and ClickHouse. It also starts Kafka UI (http://localhost:8080), Prometheus (http://localhost:9090) and Grafana (http://localhost:3000, user `admin`, password `kafka`). You can also run the consumer executable in another console and it will connect and work with the fallback environment values. You need to change the `BATCH_SIZE` variable in `docker-compose.yml` for testing probably.
 
 ## Development process, flaws etc.
 
