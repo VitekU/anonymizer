@@ -11,7 +11,6 @@
 #include "helper.h"
 
 #define TOPIC "http_log"
-#define BATCH_SIZE 1000
 #define DATABASE_RECONNECT_INTERVAL_MS 10000
 
 static volatile sig_atomic_t run = 1;
@@ -91,7 +90,7 @@ int main(void) {
             std::cout << "Incorrect message format\n";
         }
 
-        if (log_buffer.size() >= BATCH_SIZE) {
+        if (log_buffer.size() >= std::stoi(env("BATCH_SIZE", "10000"))) {
             if (insert_logs(&client, log_buffer)) {
                 std::cout << "Succesful insert to database\n";
                 rd_kafka_commit(consumer, NULL, 0);

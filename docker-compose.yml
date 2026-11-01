@@ -103,6 +103,7 @@ services:
       CLICKHOUSE_USER: default
       CLICKHOUSE_PASSWORD: ""
       GROUP_ID: "anonymizer"
+      BATCH_SIZE: 10000
     depends_on:
       - kafka
       - clickhouse-server
