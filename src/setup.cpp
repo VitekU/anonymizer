@@ -20,7 +20,7 @@ bool setup_consumer(rd_kafka_t **consumer, char *errstr) {
     
     set_config(conf, "bootstrap.servers", env("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092").c_str());
 
-    set_config(conf, "group.id",          "anonymizer");
+    set_config(conf, "group.id", env("GROUP_ID", "anonymizer").c_str());
     set_config(conf, "auto.offset.reset", "earliest");
     set_config(conf, "enable.auto.commit", "false");
 

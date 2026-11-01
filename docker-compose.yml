@@ -102,6 +102,7 @@ services:
       CLICKHOUSE_PORT: 9000
       CLICKHOUSE_USER: default
       CLICKHOUSE_PASSWORD: ""
+      GROUP_ID: "anonymizer"
     depends_on:
       - kafka
       - clickhouse-server
